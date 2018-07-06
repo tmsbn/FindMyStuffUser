@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">FindMyStuffUser</string>
+    <string name="action_settings">Settings</string>
+    <string name="readyMessage_txt">Ready to send message</string>
+</resources>
