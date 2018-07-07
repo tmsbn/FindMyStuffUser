@@ -30,6 +30,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Locale;
 
+import android.speech.tts.TextToSpeech;
+
 import okhttp3.OkHttpClient;
 
 public class MainActivity extends AppCompatActivity {
@@ -48,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
 
     AndroidWebServer androidWebServer;
 
+    private TextToSpeech t1;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -58,8 +62,18 @@ public class MainActivity extends AppCompatActivity {
         OkHttpClient okHttpClient = new OkHttpClient().newBuilder().build();
         AndroidNetworking.initialize(getApplicationContext(), okHttpClient);
 
+
         foundImageView = findViewById(R.id.foundImage);
         statusTextView = (TextView) findViewById(R.id.statusText);
+
+        t1 = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                if (status != TextToSpeech.ERROR) {
+                    t1.setLanguage(Locale.UK);
+                }
+            }
+        });
 
         androidWebServer = new AndroidWebServer(this, port, new AndroidWebServer.ServerInterface() {
 
@@ -67,10 +81,18 @@ public class MainActivity extends AppCompatActivity {
             public void getResponse(String response) {
 
                 statusTextView.setText(response);
+                t1.speak(response, TextToSpeech.QUEUE_FLUSH, null);
+
+//               Intent i = MainActivity.this.getPackageManager().getLaunchIntentForPackage("com.teamviewer.teamviewer.market.mobile");
+//                i.putExtra("id_key", "123456789");
+//                i.putExtra("password", "1234");
+//                startActivity(i);
 
 
             }
         });
+
+
 
 
         sendButton = (Button) findViewById(R.id.sendButton);
@@ -207,7 +229,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
     /**
      * @param encodedString
      * @return bitmap (from given string)
@@ -268,6 +289,19 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    public void getSpeechInput(View view) {
+
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(intent, 10);
+        } else {
+            Toast.makeText(this, "Your Device Don't Support Speech Input", Toast.LENGTH_SHORT).show();
+        }
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
@@ -279,7 +313,9 @@ public class MainActivity extends AppCompatActivity {
                     //statusTextView.setText(result.get(0));
                     String sentence = result.get(0);
                     lastWord = sentence.substring(sentence.lastIndexOf(" ") + 1);
-                    lastWord = "bottle";
+                    statusTextView.setText("Finding " + lastWord + "...");
+
+                    t1.speak("Finding " + lastWord, TextToSpeech.QUEUE_FLUSH, null);
 
                     AndroidNetworking.post(sendIP)
                             .addQueryParameter("message", lastWord)
@@ -290,11 +326,9 @@ public class MainActivity extends AppCompatActivity {
                                 @Override
                                 public void onResponse(JSONObject response) {
                                     // do anything with response
-                                    try {
-                                        statusTextView.setText("got response:" + response.getString("message"));
-                                    } catch (JSONException e) {
-                                        e.printStackTrace();
-                                    }
+
+                                    statusTextView.setText("Finding " + lastWord + "...");
+
                                 }
 
                                 @Override

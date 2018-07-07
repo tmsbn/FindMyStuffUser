@@ -47,8 +47,7 @@ public class AndroidWebServer extends NanoHTTPD {
                     context.runOnUiThread(new Runnable() {
                         public void run() {
 
-                            String nearObjects = parms.get("image").get(0);
-                            String msg = "Object found near " + nearObjects;
+                            String msg = parms.get("image").get(0);
                             serverInterface.getResponse(msg);
                         }
                     });
