@@ -28,5 +28,6 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.2'
     implementation 'com.amitshekhar.android:android-networking:1.0.1'
     implementation 'com.squareup.okhttp3:okhttp:3.10.0'
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
 
 }
