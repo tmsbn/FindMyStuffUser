@@ -1,5 +1,6 @@
 package com.mobilehack.findmystuffuser;
 
+import android.os.AsyncTask;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.widget.Toast;
@@ -15,10 +16,12 @@ import fi.iki.elonen.NanoHTTPD;
 public class AndroidWebServer extends NanoHTTPD {
 
     AppCompatActivity context;
+    ServerInterface serverInterface;
 
-    public AndroidWebServer(AppCompatActivity context, int port) {
+    public AndroidWebServer(AppCompatActivity context, int port, ServerInterface serverInterface) {
         super(port);
         this.context = context;
+        this.serverInterface = serverInterface;
     }
 
     public AndroidWebServer(String hostname, int port) {
@@ -28,15 +31,33 @@ public class AndroidWebServer extends NanoHTTPD {
     @Override
     public Response serve(IHTTPSession session) {
 
-        Log.d("hello", "world");
+        //Log.d("hello", "world");
 
 
-        Map<String, List<String>> parms = session.getParameters();
+        final Map<String, List<String>> parms = session.getParameters();
         String msg = "";
 
 
-        if (parms.get("message") != null) {
-            msg += parms.get("message").get(0);
+        if (parms.get("image") != null) {
+
+            AsyncTask.execute(new Runnable() {
+                @Override
+                public void run() {
+
+                    context.runOnUiThread(new Runnable() {
+                        public void run() {
+
+                            String nearObjects = parms.get("image").get(0);
+                            String msg = "Object found near " + nearObjects;
+                            serverInterface.getResponse(msg);
+                        }
+                    });
+
+                }
+            });
+
+
+            msg += "got message'";
         } else {
             msg += "Didn't get message";
         }
@@ -49,15 +70,16 @@ public class AndroidWebServer extends NanoHTTPD {
             e.printStackTrace();
         }
 
-        final String finalMessasge = "Got message:" + msg;
 
-        context.runOnUiThread(new Runnable() {
-            public void run() {
-                Toast.makeText(context, finalMessasge, Toast.LENGTH_SHORT).show();
-            }
-        });
 
-        return newFixedLengthResponse(Response.Status.OK, "text/json",jsonObj.toString());
+        return newFixedLengthResponse(Response.Status.OK, "text/json", jsonObj.toString());
+    }
+
+
+    public interface ServerInterface {
+
+
+        public void getResponse(String response);
     }
 
 

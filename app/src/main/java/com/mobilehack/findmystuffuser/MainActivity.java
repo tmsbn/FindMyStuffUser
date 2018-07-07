@@ -1,12 +1,15 @@
 package com.mobilehack.findmystuffuser;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.speech.RecognizerIntent;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.Toolbar;
+import android.util.Base64;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -41,7 +44,9 @@ public class MainActivity extends AppCompatActivity {
     Button serverButton;
     ImageView speakButton;
     String lastWord = "";
+    ImageView foundImageView;
 
+    AndroidWebServer androidWebServer;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,11 +57,24 @@ public class MainActivity extends AppCompatActivity {
 
         OkHttpClient okHttpClient = new OkHttpClient().newBuilder().build();
         AndroidNetworking.initialize(getApplicationContext(), okHttpClient);
-        final AndroidWebServer androidWebServer = new AndroidWebServer(this, port);
+
+        foundImageView = findViewById(R.id.foundImage);
+        statusTextView = (TextView) findViewById(R.id.statusText);
+
+        androidWebServer = new AndroidWebServer(this, port, new AndroidWebServer.ServerInterface() {
+
+            @Override
+            public void getResponse(String response) {
+
+                statusTextView.setText(response);
+
+
+            }
+        });
 
 
         sendButton = (Button) findViewById(R.id.sendButton);
-        statusTextView = (TextView) findViewById(R.id.statusText);
+
         serverButton = (Button) findViewById(R.id.serverButton);
         speakButton = findViewById(R.id.speakButton);
 
@@ -181,6 +199,30 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    @Override
+    protected void onStop() {
+
+        //androidWebServer.stop();
+        super.onStop();
+    }
+
+
+
+    /**
+     * @param encodedString
+     * @return bitmap (from given string)
+     */
+    public Bitmap stringToBitmap(String encodedString) {
+        try {
+            byte[] encodeByte = Base64.decode(encodedString, Base64.DEFAULT);
+            Bitmap bitmap = BitmapFactory.decodeByteArray(encodeByte, 0, encodeByte.length);
+            return bitmap;
+        } catch (Exception e) {
+            e.getMessage();
+            return null;
+        }
+    }
+
 
     private String getIpAccess() {
 
@@ -237,6 +279,7 @@ public class MainActivity extends AppCompatActivity {
                     //statusTextView.setText(result.get(0));
                     String sentence = result.get(0);
                     lastWord = sentence.substring(sentence.lastIndexOf(" ") + 1);
+                    lastWord = "bottle";
 
                     AndroidNetworking.post(sendIP)
                             .addQueryParameter("message", lastWord)
