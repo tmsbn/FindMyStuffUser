@@ -5,7 +5,7 @@
 
     <string name="start_server_txt">start server</string>
     <string name="stop_server_txt">stop server</string>
-    <string name="serverListenTxt">Server is listening at</string>
+    <string name="serverListenTxt">Server is listening at </string>
     <string name="serverNotRunning_txt">Server is not running</string>
     <string name="send_txt">Send</string>
 

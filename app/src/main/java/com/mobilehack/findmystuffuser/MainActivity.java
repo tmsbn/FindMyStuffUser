@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -38,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     TextView statusTextView;
     Button sendButton;
     Button serverButton;
-    AppCompatImageView speakButton;
+    ImageView speakButton;
     String lastWord = "";
 
 
@@ -60,6 +61,20 @@ public class MainActivity extends AppCompatActivity {
         speakButton = findViewById(R.id.speakButton);
 
         statusTextView.setText(R.string.readyMessage_txt);
+
+        if (!androidWebServer.isAlive()) {
+
+            try {
+                androidWebServer.start();
+                serverButton.setText(getText(R.string.stop_server_txt));
+                statusTextView.setText(getString(R.string.serverListenTxt) + getIpAccess() + port);
+
+            } catch (IOException e) {
+                e.printStackTrace();
+                statusTextView.setText(e.getMessage());
+
+            }
+        }
 
         serverButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -219,7 +234,7 @@ public class MainActivity extends AppCompatActivity {
             case 10:
                 if (resultCode == RESULT_OK && data != null) {
                     ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
-                    statusTextView.setText(result.get(0));
+                    //statusTextView.setText(result.get(0));
                     String sentence = result.get(0);
                     lastWord = sentence.substring(sentence.lastIndexOf(" ") + 1);
 
