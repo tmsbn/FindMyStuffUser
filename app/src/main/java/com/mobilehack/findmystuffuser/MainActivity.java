@@ -1,14 +1,18 @@
 package com.mobilehack.findmystuffuser;
 
+import android.content.Intent;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
+import android.speech.RecognizerIntent;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.AppCompatImageView;
 import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.androidnetworking.AndroidNetworking;
 import com.androidnetworking.common.Priority;
@@ -19,6 +23,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Locale;
 
 import okhttp3.OkHttpClient;
@@ -29,6 +34,13 @@ public class MainActivity extends AppCompatActivity {
     String sendIP = "http://10.73.242.154:8000";
 
     int port = 8000;
+
+    TextView statusTextView;
+    Button sendButton;
+    Button serverButton;
+    AppCompatImageView speakButton;
+    String lastWord = "";
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -42,9 +54,10 @@ public class MainActivity extends AppCompatActivity {
         final AndroidWebServer androidWebServer = new AndroidWebServer(this, port);
 
 
-        final Button sendButton = (Button) findViewById(R.id.sendButton);
-        final TextView statusTextView = (TextView) findViewById(R.id.statusText);
-        final Button serverButton = (Button) findViewById(R.id.serverButton);
+        sendButton = (Button) findViewById(R.id.sendButton);
+        statusTextView = (TextView) findViewById(R.id.statusText);
+        serverButton = (Button) findViewById(R.id.serverButton);
+        speakButton = findViewById(R.id.speakButton);
 
         statusTextView.setText(R.string.readyMessage_txt);
 
@@ -52,7 +65,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
 
-                if(!androidWebServer.isAlive()) {
+                if (!androidWebServer.isAlive()) {
 
                     try {
                         androidWebServer.start();
@@ -65,7 +78,7 @@ public class MainActivity extends AppCompatActivity {
                         //textView.setText(R.string.serverNotRunning_txt);
 
                     }
-                }else{
+                } else {
                     androidWebServer.stop();
                     statusTextView.setText(R.string.serverNotRunning_txt);
                     serverButton.setText(getText(R.string.start_server_txt));
@@ -80,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
 
                 AndroidNetworking.post(sendIP)
-                        .addQueryParameter("message", "Where is my shoes?")
+                        .addQueryParameter("message", lastWord)
                         .setTag("test")
                         .setPriority(Priority.MEDIUM)
                         .build()
@@ -134,7 +147,25 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+
+        speakButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+
+                Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+                intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+
+                if (intent.resolveActivity(getPackageManager()) != null) {
+                    startActivityForResult(intent, 10);
+                } else {
+                    Toast.makeText(MainActivity.this, "Your Device Don't Support Speech Input", Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        });
     }
+
 
     private String getIpAccess() {
 
@@ -165,5 +196,61 @@ public class MainActivity extends AppCompatActivity {
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    public void getSpeechInput() {
+
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+
+        if (intent.resolveActivity(getPackageManager()) != null) {
+            startActivityForResult(intent, 10);
+        } else {
+            Toast.makeText(this, "Your Device Don't Support Speech Input", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        switch (requestCode) {
+            case 10:
+                if (resultCode == RESULT_OK && data != null) {
+                    ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    statusTextView.setText(result.get(0));
+                    String sentence = result.get(0);
+                    lastWord = sentence.substring(sentence.lastIndexOf(" ") + 1);
+
+                    AndroidNetworking.post(sendIP)
+                            .addQueryParameter("message", lastWord)
+                            .setTag("test")
+                            .setPriority(Priority.MEDIUM)
+                            .build()
+                            .getAsJSONObject(new JSONObjectRequestListener() {
+                                @Override
+                                public void onResponse(JSONObject response) {
+                                    // do anything with response
+                                    try {
+                                        statusTextView.setText("got response:" + response.getString("message"));
+                                    } catch (JSONException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+
+                                @Override
+                                public void onError(ANError error) {
+                                    // handle error
+
+                                    statusTextView.setText(error.getErrorDetail());
+                                    error.printStackTrace();
+                                }
+                            });
+
+
+                }
+                break;
+        }
     }
 }

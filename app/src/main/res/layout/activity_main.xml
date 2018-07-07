@@ -20,6 +20,16 @@
 
     </android.support.design.widget.AppBarLayout>
 
+    <ImageView
+        android:id="@+id/speakButton"
+        android:layout_width="100dp"
+        android:layout_height="100dp"
+        android:layout_alignParentBottom="true"
+        android:layout_centerHorizontal="true"
+        android:layout_marginBottom="60dp"
+        android:gravity="center"
+        android:src="@drawable/ic_mic" />
+
     <android.widget.TextView
         android:id="@+id/statusText"
         android:layout_width="wrap_content"
